@@ -29,7 +29,8 @@ class DistilBERTSimple(nn.Module):
     def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
         h_topic = self.l1(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
-        h = torch.cat([h_ev, h_topic, procon],dim=-1)
+        print(h_ev[0].shape)
+        h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
         for layer in self.hidden_layers:
             h = layer(h)
         output = self.final_layer(h)
@@ -45,13 +46,13 @@ class DistilBERTTokenizer(Tokenizer):
     def tokenize(self, string):
         text = " ".join(string.split())
 
-        inputs = self.tokenizer.encode_plus(
+        inputs = self.tokenizer(
             text,
             None,
             add_special_tokens=True,
             max_length=self.max_len,
-            pad_to_max_length=True,
-            return_token_type_ids=False
+            padding='max_length',
+            truncation=True
         )
         ids = inputs['input_ids']
         mask = inputs['attention_mask']

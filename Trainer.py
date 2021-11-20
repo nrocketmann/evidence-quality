@@ -54,9 +54,11 @@ class MultiLabelDataset(Dataset): #dataset should return something that can be f
     def __getitem__(self, index):
         ev1, ev2 = self.evidences[index]
         topic = self.topics[index]
-        procon = torch.tensor(self.procons[index]).to(self.device)
+        procon1, procon2 = self.procons[index]
         tokenized_ev1 = self.tokenizer.tokenize(ev1) #already tensor
         tokenized_ev2 = self.tokenizer.tokenize(ev2) #already tensor
         tokenized_topic = self.tokenizer.tokenize(topic) #already tensor
+        label = torch.tensor(self.labels[index],dtype=torch.int64)
 
-        return [tokenized_ev1, tokenized_topic, procon], [tokenized_ev2, tokenized_topic, procon], self.labels[index] #hopefully collate_fn will work here...
+        return [*tokenized_ev1, *tokenized_topic, procon1], [*tokenized_ev2, *tokenized_topic, procon2], label
+        #hopefully collate_fn will work here...

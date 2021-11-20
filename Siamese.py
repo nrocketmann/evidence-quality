@@ -8,9 +8,8 @@ class Siamese(nn.Module):
         self.backbone = backbone
 
     def forward(self, input1, input2, return_logits = True):
-        assert input1.shape[0]==input2.shape[0] #make sure batches are same size
-
         #forward on both legs of the network
+        print(len(input1))
         output1, output2 = self.backbone(*input1), self.backbone(*input2)
         #shape B x N where N is 1 or 2 in case of dummy output
 
