@@ -50,6 +50,22 @@ class Trainer:
                 #print("backward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
             torch.save(self.backbone,open(savepath,'wb'))
+    def evaluate(self):
+        self.model.eval()
+        correct_score = 0
+        total_score = 0
+        for _, data in tqdm(enumerate(self.dataloader)):
+            inp1, inp2, targets = data
+            outputs = self.model(inp1, inp2)
+            total_score+=outputs.shape[0]
+            preds = torch.argmax(outputs,dim=-1)
+            for p, t in zip(preds, targets):
+                print(p)
+                print(t)
+                if p==t:
+                    correct_score+=1
+        return correct_score
+
 
 
 class MultiLabelDataset(Dataset): #dataset should return something that can be fed into the Siamese class
