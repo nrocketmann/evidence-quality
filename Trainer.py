@@ -29,11 +29,11 @@ class Trainer:
             self.model.train()
             t0 = time.time()
             for _, data in tqdm(enumerate(self.dataloader)):
-                print("dataloader elapsed time: {0}".format(time.time()-t0))
+                #print("dataloader elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
                 inp1, inp2, targets = data
                 outputs = self.model(inp1,inp2)
-                print("forward elapsed time: {0}".format(time.time()-t0))
+                #print("forward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
 
                 self.optimizer.zero_grad()
@@ -44,7 +44,7 @@ class Trainer:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                print("backward elapsed time: {0}".format(time.time()-t0))
+                #print("backward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
 
 

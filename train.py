@@ -6,7 +6,7 @@ import numpy as np
 device = 'cuda:0'
 lrate = 1e-4
 epochs = 10
-batch_size=16
+batch_size=4
 
 def get_datas(df):
     evidences =  np.stack([df['evidence_1'].values, df['evidence_2'].values],axis=-1)
@@ -24,7 +24,7 @@ iter_per_epoch = len(train_data[0])//batch_size
 print("Iter per epoch: " + str(iter_per_epoch))
 
 tokenizer = DistilBERTTokenizer(device=device)
-backbone = DistilBERTSimple()
+backbone = DistilBERTSimple(hidden_layers=[]).to(device)
 trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size)
 
 print("Model and data loaded! Beginning training")
