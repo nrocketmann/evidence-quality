@@ -28,6 +28,7 @@ class Trainer:
         for epoch in range(epochs):
             self.model.train()
             t0 = time.time()
+            running_loss = 0
             for _, data in tqdm(enumerate(self.dataloader)):
                 #print("dataloader elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
@@ -38,8 +39,10 @@ class Trainer:
 
                 self.optimizer.zero_grad()
                 loss = self.loss_fn(outputs, targets)
-                if (_+1) % 10 == 0:
-                    print(f'Epoch: {epoch}, Loss:  {loss.item()}')
+                running_loss+=loss.item()
+                if (_+1) % 100 == 0:
+                    print(f'Epoch: {epoch}, Loss:  {running_loss/100}')
+                    running_loss = 0
 
                 self.optimizer.zero_grad()
                 loss.backward()

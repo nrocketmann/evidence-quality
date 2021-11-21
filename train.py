@@ -7,6 +7,7 @@ device = 'cuda:0'
 lrate = 1e-4
 epochs = 10
 batch_size=4
+SAVEPATH = "model.pth"
 
 def get_datas(df):
     evidences =  np.stack([df['evidence_1'].values, df['evidence_2'].values],axis=-1)
@@ -29,3 +30,4 @@ trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_
 
 print("Model and data loaded! Beginning training")
 trainer.train(epochs)
+backbone.save(SAVEPATH)
