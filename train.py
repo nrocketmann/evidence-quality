@@ -18,9 +18,10 @@ def get_datas(df):
     return topics, evidences, procons, targets
 
 
-
 df = pd.read_csv('data/train.csv')
 train_data = get_datas(df)
+iter_per_epoch = len(train_data[0])//batch_size
+print("Iter per epoch: " + str(iter_per_epoch))
 
 tokenizer = DistilBERTTokenizer(device=device)
 backbone = DistilBERTSimple()

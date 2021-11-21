@@ -9,7 +9,6 @@ class Siamese(nn.Module):
 
     def forward(self, input1, input2, return_logits = True):
         #forward on both legs of the network
-        print(len(input1))
         output1, output2 = self.backbone(*input1), self.backbone(*input2)
         #shape B x N where N is 1 or 2 in case of dummy output
 

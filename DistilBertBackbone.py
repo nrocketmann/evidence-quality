@@ -29,7 +29,7 @@ class DistilBERTSimple(nn.Module):
     def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
         h_topic = self.l1(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
-        print(h_ev[0].shape)
+        
         h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
         for layer in self.hidden_layers:
             h = layer(h)
