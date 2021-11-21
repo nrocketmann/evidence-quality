@@ -30,5 +30,5 @@ backbone = DistilBERTSimple(hidden_layers=[]).to(device)
 trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size)
 
 print("Model and data loaded! Beginning training")
-trainer.train(epochs)
-torch.save(backbone, open("backbone.pth",'wb'))
+trainer.train(epochs,SAVEPATH)
+torch.save(backbone, open(SAVEPATH,'wb'))

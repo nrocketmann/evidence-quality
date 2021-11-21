@@ -24,7 +24,7 @@ class Trainer:
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),lr=lrate)
         self.loss_fn = nn.CrossEntropyLoss()
 
-    def train(self, epochs):
+    def train(self, epochs, savepath):
         for epoch in range(epochs):
             self.model.train()
             t0 = time.time()
@@ -49,6 +49,7 @@ class Trainer:
                 self.optimizer.step()
                 #print("backward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
+            torch.save(self.backbone,open(savepath,'wb'))
 
 
 class MultiLabelDataset(Dataset): #dataset should return something that can be fed into the Siamese class
