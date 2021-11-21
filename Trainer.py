@@ -65,6 +65,7 @@ class MultiLabelDataset(Dataset): #dataset should return something that can be f
         ev1, ev2 = self.evidences[index]
         topic = self.topics[index]
         procon1, procon2 = self.procons[index]
+        procon1, procon2 = torch.tensor(procon1).to(self.device), torch.tensor(procon2).to(self.device)
         tokenized_ev1 = self.tokenizer.tokenize(ev1) #already tensor
         tokenized_ev2 = self.tokenizer.tokenize(ev2) #already tensor
         tokenized_topic = self.tokenizer.tokenize(topic) #already tensor
