@@ -3,7 +3,7 @@ from Trainer import Trainer
 import pandas as pd
 import numpy as np
 
-device = 'cpu'
+device = 'cuda:0'
 lrate = 1e-4
 epochs = 10
 batch_size=16
@@ -26,4 +26,6 @@ print("Iter per epoch: " + str(iter_per_epoch))
 tokenizer = DistilBERTTokenizer(device=device)
 backbone = DistilBERTSimple()
 trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size)
+
+print("Model and data loaded! Beginning training")
 trainer.train(epochs)

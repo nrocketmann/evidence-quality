@@ -38,7 +38,7 @@ class Trainer:
 
                 self.optimizer.zero_grad()
                 loss = self.loss_fn(outputs, targets)
-                if (_+1) % 100 == 0:
+                if (_+1) % 10 == 0:
                     print(f'Epoch: {epoch}, Loss:  {loss.item()}')
 
                 self.optimizer.zero_grad()
@@ -68,7 +68,7 @@ class MultiLabelDataset(Dataset): #dataset should return something that can be f
         tokenized_ev1 = self.tokenizer.tokenize(ev1) #already tensor
         tokenized_ev2 = self.tokenizer.tokenize(ev2) #already tensor
         tokenized_topic = self.tokenizer.tokenize(topic) #already tensor
-        label = torch.tensor(self.labels[index],dtype=torch.int64)
+        label = torch.tensor(self.labels[index],dtype=torch.int64).to(self.device)
 
         return [*tokenized_ev1, *tokenized_topic, procon1], [*tokenized_ev2, *tokenized_topic, procon2], label
         #hopefully collate_fn will work here...
