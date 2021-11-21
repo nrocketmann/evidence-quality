@@ -41,7 +41,7 @@ class Trainer:
                 loss = self.loss_fn(outputs, targets)
                 running_loss+=loss.item()
                 if (_+1) % 100 == 0:
-                    print(f'Epoch: {epoch}, Loss:  {running_loss/100}')
+                    print('Epoch: {0}, Loss:  {1}'.format(epoch,running_loss/100))
                     running_loss = 0
 
                 self.optimizer.zero_grad()
