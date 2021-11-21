@@ -2,6 +2,7 @@ from DistilBertBackbone import DistilBERTSimple, DistilBERTTokenizer
 from Trainer import Trainer
 import pandas as pd
 import numpy as np
+import torch
 
 device = 'cuda:0'
 lrate = 1e-4
@@ -30,4 +31,4 @@ trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_
 
 print("Model and data loaded! Beginning training")
 trainer.train(epochs)
-backbone.save(SAVEPATH)
+torch.save(backbone, open("backbone.pth",'wb'))
