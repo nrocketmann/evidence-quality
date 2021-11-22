@@ -6,7 +6,7 @@ import torch
 #model class for DistilBERT backbone, with linear layers on top to predict output
 #It's "simple" because we are just encoding the topic with the same model and concatenating
 class DistilBERTSimple(nn.Module):
-    def __init__(self, hidden_layers = [512], hidden_activation=nn.ReLU, dropout_chance = .1,num_outputs = 1):
+    def __init__(self, hidden_layers = [512], hidden_activation=nn.ReLU, dropout_chance = .1,num_outputs = 1, device='cuda:0'):
         super(DistilBERTSimple, self).__init__()
         self.l1 = DistilBertModel.from_pretrained("distilbert-base-uncased") #I'm not using any config here, just default
         #we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
@@ -18,7 +18,7 @@ class DistilBERTSimple(nn.Module):
         #add hidden layers
         last_size = 768*2 + 1 #BERT output size is 768
         for size in hidden_layers:
-            self.hidden_layers.append(nn.Linear(last_size, size))
+            self.hidden_layers.append(nn.Linear(last_size, size).to(device))
             self.hidden_layers.append(hidden_activation())
             self.hidden_layers.append(nn.Dropout(dropout_chance))
             last_size = size
