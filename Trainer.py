@@ -20,7 +20,7 @@ class Trainer:
             self.dataset = MultiLabelDataset(tokenizer, topics, evidences, procons, labels,
                                          device=device)
         self.dataloader = DataLoader(self.dataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
-        self.model = Siamese(backbone)
+        self.model = Siamese(backbone).to(self.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),lr=lrate)
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -60,11 +60,9 @@ class Trainer:
             total_score+=outputs.shape[0]
             preds = torch.argmax(outputs,dim=-1)
             for p, t in zip(preds, targets):
-                print(p)
-                print(t)
                 if p==t:
                     correct_score+=1
-        return correct_score
+        return correct_score/total_score
 
 
 

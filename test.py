@@ -27,4 +27,4 @@ trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_
 
 print("Model and data loaded! Beginning training")
 acc = trainer.evaluate()
-print(ac)
+print(acc)

@@ -36,6 +36,11 @@ class DistilBERTSimple(nn.Module):
         output = self.final_layer(h)
         return output
 
+    def parameters(self):
+        for module in [self.l1, self.final_layer] + self.hidden_layers:
+            for param in module.parameters():
+                yield param
+
 class DistilBERTTokenizer(Tokenizer):
     def __init__(self, max_len = 512, device='cuda:0'):
         super().__init__()

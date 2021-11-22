@@ -21,3 +21,6 @@ class Siamese(nn.Module):
             return together #should be used with CrossEntropyLoss (not NLL, since we didn't apply log_softmax)
         else:
             return torch.softmax(together,-1)
+
+    def parameters(self):
+        return self.backbone.parameters()
