@@ -5,9 +5,9 @@ import numpy as np
 import torch
 
 device = 'cuda:0'
-lrate = 1e-3
-epochs = 15
-batch_size=4
+lrate = 1e-4
+epochs = 10
+batch_size=2
 SAVEPATH = "model.pth"
 
 def get_datas(df):
