@@ -6,14 +6,13 @@ import torch
 
 device = 'cpu'
 lrate = 1e-4
-epochs = 10
-batch_size=16
+epochs = 50
+batch_size=32
 SAVEPATH = "modelLSTM.pth"
 cache_dataset="lstmcache.pkl"
-load_cache = False
+load_cache = True
 
 def get_datas(df):
-    df = df[:-200]
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)
     procon1 = df['evidence_1_stance'].apply(lambda x: 0 if x=="CON" else 1)
     procon2 = df['evidence_2_stance'].apply(lambda x: 0 if x=="CON" else 1)

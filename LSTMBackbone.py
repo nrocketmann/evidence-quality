@@ -14,21 +14,21 @@ import pickle
 # model class for DistilBERT backbone, with linear layers on top to predict output
 # It's "simple" because we are just encoding the topic with the same model and concatenating
 class LSTMBackbone(nn.Module):
-    def __init__(self, num_outputs, embedding_matrix, input_length, learned_embeddings=False, device='cuda:0'):
+    def __init__(self, num_outputs, embedding_matrix, input_length, learned_embeddings=True, device='cuda:0'):
         super(LSTMBackbone, self).__init__()
         self.num_outputs = num_outputs
         self.seq_len = input_length
 
-
+        HSIZE = 128
         self.vocab_size, self.embedding_dim = embedding_matrix.shape[0], embedding_matrix.shape[1]
         self.emb_layer = nn.Embedding(self.vocab_size, self.embedding_dim,self.vocab_size-1)
         self.emb_layer.load_state_dict({'weight': embedding_matrix})
         if not learned_embeddings:
             self.emb_layer.weight.requires_grad = False
 
-        self.lstm_ev = nn.GRU(self.embedding_dim, 512, bidirectional=True, batch_first=True)
-        self.lstm_top = nn.GRU(self.embedding_dim, 512, bidirectional=True, batch_first=True)
-        self.output_hidden = nn.Linear(2*2*512+1,128)
+        self.lstm_ev = nn.LSTM(self.embedding_dim, HSIZE, bidirectional=True, batch_first=True)
+        self.lstm_top = nn.LSTM(self.embedding_dim, HSIZE, bidirectional=True, batch_first=True)
+        self.output_hidden = nn.Linear(2*2*HSIZE+1,128)
         self.output_fc = nn.Linear(128,num_outputs)
 
 
@@ -36,6 +36,7 @@ class LSTMBackbone(nn.Module):
         batch_size = procon.shape[0]
         embeddings_ev = self.emb_layer(evidence)
         embeddings_top = self.emb_layer(topic)
+        embeddings_top = nn.Dropout(.3)(embeddings_top)
         embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths, batch_first=True,enforce_sorted=False)
         embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths, batch_first=True,enforce_sorted=False)
         lstm_ev, _ = self.lstm_ev(embeddings_ev)
@@ -46,6 +47,7 @@ class LSTMBackbone(nn.Module):
         ev_hidden = lstm_ev.contiguous()[torch.arange(batch_size),evidence_lengths-1,:]
         top_hidden = lstm_top.contiguous()[torch.arange(batch_size), topic_lengths - 1, :]
         hidden = torch.cat([ev_hidden, top_hidden, procon.view(-1,1)],dim=-1)
+        hidden = nn.Dropout(.2)(hidden)
 
         hidden = nn.ReLU()(self.output_hidden(hidden))
         outputs = self.output_fc(hidden)
