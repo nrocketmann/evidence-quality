@@ -9,8 +9,11 @@ lrate = 1e-4
 epochs = 10
 batch_size=16
 SAVEPATH = "modelLSTM.pth"
+cache_dataset="lstmcache.pkl"
+load_cache = False
 
 def get_datas(df):
+    df = df[:-200]
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)
     procon1 = df['evidence_1_stance'].apply(lambda x: 0 if x=="CON" else 1)
     procon2 = df['evidence_2_stance'].apply(lambda x: 0 if x=="CON" else 1)
@@ -19,12 +22,21 @@ def get_datas(df):
     targets = df['label'].values-1
     return topics, evidences, procons, targets
 
-
-
-df = pd.read_csv('data/train.csv')
-topics, evidences, procons, targets = get_datas(df)
-print(evidences.shape)
-backbone, evidences, topics = make_model_datasets(topics,evidences,device)
+if load_cache:
+    loaded = pickle.load(open(cache_dataset,'rb'))
+    evidences = loaded["evidence"]
+    topics = loaded["topic"]
+    procons = loaded["procons"]
+    targets = loaded["targets"]
+    seq_len = loaded['seq_len']
+    embmatrix = loaded['embmatrix']
+    backbone = LSTMBackbone(1,embmatrix,seq_len,False,device=device)
+else:
+    df = pd.read_csv('data/train.csv')
+    topics, evidences, procons, targets = get_datas(df)
+    backbone, evidences, topics, seq_len, embmatrix = make_model_datasets(topics,evidences,device)
+    if cache_dataset!="":
+        pickle.dump({"evidence":evidences,"topic":topics,"procons":procons,"targets":targets,'seq_len':seq_len, 'embmatrix':embmatrix},open(cache_dataset,'wb'))
 
 iter_per_epoch = len(topics)//batch_size
 print("Iter per epoch: " + str(iter_per_epoch))

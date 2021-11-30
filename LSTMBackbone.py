@@ -28,22 +28,23 @@ class LSTMBackbone(nn.Module):
 
         self.lstm_ev = nn.GRU(self.embedding_dim, 512, bidirectional=True, batch_first=True)
         self.lstm_top = nn.GRU(self.embedding_dim, 512, bidirectional=True, batch_first=True)
-        self.output_hidden = nn.Linear(2*512+1,128)
+        self.output_hidden = nn.Linear(2*2*512+1,128)
         self.output_fc = nn.Linear(128,num_outputs)
 
 
     def forward(self, evidence, evidence_lengths, topic, topic_lengths, procon):
+        batch_size = procon.shape[0]
         embeddings_ev = self.emb_layer(evidence)
         embeddings_top = self.emb_layer(topic)
-        embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths, batch_first=True)
-        embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths, batch_first=True)
+        embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths, batch_first=True,enforce_sorted=False)
+        embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths, batch_first=True,enforce_sorted=False)
         lstm_ev, _ = self.lstm_ev(embeddings_ev)
         lstm_top,_ = self.lstm_top(embeddings_top)
 
         lstm_ev, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_ev, batch_first=True)
         lstm_top, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_top, batch_first=True)
-        ev_hidden = lstm_ev.contiguous()[:,evidence_lengths-1,:]
-        top_hidden = lstm_top.contiguous()[:, topic_lengths - 1, :]
+        ev_hidden = lstm_ev.contiguous()[torch.arange(batch_size),evidence_lengths-1,:]
+        top_hidden = lstm_top.contiguous()[torch.arange(batch_size), topic_lengths - 1, :]
         hidden = torch.cat([ev_hidden, top_hidden, procon.view(-1,1)],dim=-1)
 
         hidden = nn.ReLU()(self.output_hidden(hidden))
@@ -53,10 +54,10 @@ class LSTMBackbone(nn.Module):
 
 
 class DumbTokenizer(Tokenizer):
-    def __init__():
+    def __init__(self):
         super().__init__()
     def tokenize(self,string):
-        return string
+        return [string[...,:-1],string[...,-1]]
 
 
 def build_dictionary(uniques):
@@ -119,36 +120,44 @@ def make_model_datasets(topics, evidences,device):
     ev_ds_, top_ds_ = [], []
     lengths_ev, lengths_top = [], []
     SEQ_LEN = 50
-    for i, (topic, evidence) in enumerate(zip(tokenized_topics, tokenized_evidences)):
-        unkfixed_top, unkfixed_ev = unkfix_toks(topic, tokendict)[:SEQ_LEN],unkfix_toks(evidence, tokendict)[:SEQ_LEN]
-        lengths_ev.append(len(unkfixed_ev))
+    for i, topic in enumerate(tokenized_topics):
+        unkfixed_top = unkfix_toks(topic, tokendict)[:SEQ_LEN]
         lengths_top.append(len(unkfixed_top))
         for _ in range(SEQ_LEN - len(unkfixed_top)):
             unkfixed_top.append('<PAD>')
+        top_ds_.append(unkfixed_top)
+    for i, evidence in enumerate(tokenized_evidences):
+        unkfixed_ev = unkfix_toks(evidence, tokendict)[:SEQ_LEN]
+        lengths_ev.append(len(unkfixed_ev))
         for _ in range(SEQ_LEN - len(unkfixed_ev)):
             unkfixed_ev.append('<PAD>')
 
         ev_ds_.append(unkfixed_ev)
-        top_ds_.append(unkfixed_top)
 
     pickle.dump(tokendict, open('token_dictionary.pkl', 'wb'))
     ev_ds, top_ds = [], []
 
     # now we'll actually embed everything as integers
-    for top, ev in zip(top_ds_, ev_ds_):
-        ev_ds.append([])
+    for top in top_ds_:
         top_ds.append([])
-        for tok in ev:
-            ev_ds[-1].append(tokendict[tok])
         for tok in top:
             top_ds[-1].append(tokendict[tok])
+    for ev in ev_ds_:
+        ev_ds.append([])
+
+        for tok in ev:
+            ev_ds[-1].append(tokendict[tok])
+
 
     final_evidence = np.array(ev_ds)
-    print(final_evidence.shape)
-    final_evidence = np.stack([final_evidence[:int(final_evidence.shape[0]/2)],final_evidence[int(final_evidence.shape[0]/2):]],axis=-1)
+    N = len(top_ds)
+    final_evidence = np.stack([final_evidence[:N],final_evidence[N:]],axis=1)
     final_topics = np.array(top_ds)
+    lengths_ev = np.stack([lengths_ev[:N],lengths_ev[N:]],axis=1) #shape N x 2
+    final_evidence = np.concatenate([final_evidence, np.expand_dims(lengths_ev,-1)],-1)
+    final_topics = np.concatenate([final_topics,np.expand_dims(np.asarray(lengths_top),1)],axis=-1)
     model = LSTMBackbone(1,embmatrix,SEQ_LEN,False,device=device)
-    return model, final_evidence, final_topics
+    return model, final_evidence, final_topics, SEQ_LEN,embmatrix
 
 def make_model_datasets_test(topics, evidences,device, dictfile):
     nlp = spacy.load("en_core_web_sm")
@@ -165,33 +174,42 @@ def make_model_datasets_test(topics, evidences,device, dictfile):
     ev_ds_, top_ds_ = [], []
     lengths_ev, lengths_top = [], []
     SEQ_LEN = 50
-    for i, (topic, evidence) in enumerate(zip(tokenized_topics, tokenized_evidences)):
-        unkfixed_top, unkfixed_ev = unkfix_toks(topic, tokendict)[:SEQ_LEN],unkfix_toks(evidence, tokendict)[:SEQ_LEN]
-        lengths_ev.append(len(unkfixed_ev))
+    for i, topic in enumerate(tokenized_topics):
+        unkfixed_top = unkfix_toks(topic, tokendict)[:SEQ_LEN]
         lengths_top.append(len(unkfixed_top))
         for _ in range(SEQ_LEN - len(unkfixed_top)):
             unkfixed_top.append('<PAD>')
+        top_ds_.append(unkfixed_top)
+
+    for i, evidence in enumerate(tokenized_evidences):
+        unkfixed_ev = unkfix_toks(evidence, tokendict)[:SEQ_LEN]
+
+        lengths_ev.append(len(unkfixed_ev))
+
+
         for _ in range(SEQ_LEN - len(unkfixed_ev)):
             unkfixed_ev.append('<PAD>')
 
         ev_ds_.append(unkfixed_ev)
-        top_ds_.append(unkfixed_top)
-
-    pickle.dump(tokendict, open('token_dictionary.pkl', 'wb'))
     ev_ds, top_ds = [], []
 
     # now we'll actually embed everything as integers
-    for top, ev in zip(top_ds_, ev_ds_):
-        ev_ds.append([])
+    for top in top_ds_:
         top_ds.append([])
-        for tok in ev:
-            ev_ds[-1].append(tokendict[tok])
         for tok in top:
             top_ds[-1].append(tokendict[tok])
+    for ev in ev_ds_:
+        ev_ds.append([])
+        for tok in ev:
+            ev_ds[-1].append(tokendict[tok])
 
     final_evidence = np.array(ev_ds)
-    final_evidence = np.stack([final_evidence[:int(final_evidence.shape[0]/2)],final_evidence[int(final_evidence.shape[0]/2):]],axis=-1)
+    N = len(top_ds)
+    final_evidence = np.stack([final_evidence[:N],final_evidence[N:]],axis=1)
     final_topics = np.array(top_ds)
+    lengths_ev = np.stack([lengths_ev[:N],lengths_ev[N:]],axis=1) #shape N x 2
+    final_evidence = np.concatenate([final_evidence, np.expand_dims(lengths_ev,-1)],-1)
+    final_topics = np.concatenate([final_topics,np.expand_dims(np.asarray(lengths_top),1)],axis=-1)
     return final_evidence, final_topics
 
 

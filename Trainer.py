@@ -33,6 +33,7 @@ class Trainer:
                 #print("dataloader elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
                 inp1, inp2, targets = data
+
                 outputs = self.model(inp1,inp2)
                 #print("forward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
