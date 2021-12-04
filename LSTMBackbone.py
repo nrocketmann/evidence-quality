@@ -49,6 +49,7 @@ class LSTMBackbone(nn.Module):
 
         self.dropout3 = nn.Dropout(.3)
         self.dropout2 = nn.Dropout(.2)
+        self.device = device
 
 
     def forward(self, evidence, evidence_lengths, topic, topic_lengths, procon):
@@ -57,8 +58,8 @@ class LSTMBackbone(nn.Module):
         embeddings_top = self.emb_layer(topic)
         embeddings_top = self.dropout3(embeddings_top)
         embeddings_ev = self.dropout2(embeddings_ev)
-        embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths, batch_first=True,enforce_sorted=False)
-        embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths, batch_first=True,enforce_sorted=False)
+        embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths.cpu(), batch_first=True,enforce_sorted=False)
+        embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths.cpu(), batch_first=True,enforce_sorted=False)
         lstm_ev, _ = self.lstm_ev(embeddings_ev)
         lstm_top,_ = self.lstm_top(embeddings_top)
 
@@ -93,7 +94,7 @@ class LSTMBackbone(nn.Module):
         zeros = torch.zeros([batch_size,seq_len])
         for length in lengths:
             zeros[:,length:] = 1
-        return zeros
+        return zeros.to(self.device)
 
 
 
@@ -102,7 +103,7 @@ class DumbTokenizer(Tokenizer):
         super().__init__()
         self.device = device
     def tokenize(self,string):
-        return [torch.tensor(string[...,:-1],dtype=torch.int64).to(self.device),torch.tensor(string[...,-1],dtype=torch.int32).to('cpu')]
+        return [torch.tensor(string[...,:-1],dtype=torch.int64).to(self.device),torch.tensor(string[...,-1],dtype=torch.int32).to(self.device)]
 
 
 def build_dictionary(uniques):
