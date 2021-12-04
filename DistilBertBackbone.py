@@ -17,7 +17,7 @@ class DistilBERTSimple(nn.Module):
             self.hidden_layers.append(nn.Dropout(dropout_chance))
 
         #add hidden layers
-        last_size = 768*2 + 1 #BERT output size is 768
+        last_size = 256*2 + 1 #BERT output size is 768, electra is 256
         for size in hidden_layers:
             self.hidden_layers.append(nn.Linear(last_size, size).to(device))
             self.hidden_layers.append(hidden_activation())
@@ -26,12 +26,14 @@ class DistilBERTSimple(nn.Module):
 
         #add final linear layer
         self.final_layer = nn.Linear(last_size, num_outputs)
+        self.dropout3 = nn.Dropout(.3)
 
     def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
         h_topic = self.l1(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
         
         h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
+        h = self.dropout3(h)
         for layer in self.hidden_layers:
             h = layer(h)
         output = self.final_layer(h)
