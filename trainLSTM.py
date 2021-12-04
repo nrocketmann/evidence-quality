@@ -4,11 +4,11 @@ import pandas as pd
 import numpy as np
 import torch
 
-device = 'cpu'
+device = 'cuda:0'
 lrate = 1e-3
-epochs = 20
+epochs = 50
 batch_size=32
-SAVEPATH = "modelLSTMvanilla.pth"
+SAVEPATH = "modelLSTMAttention.pth"
 cache_dataset="lstmcache.pkl"
 load_cache = True
 
@@ -46,7 +46,7 @@ else:
 iter_per_epoch = len(topics)//batch_size
 print("Iter per epoch: " + str(iter_per_epoch))
 
-tokenizer = DumbTokenizer()
+tokenizer = DumbTokenizer(device)
 trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,lrate=lrate)
 
 print("Model and data loaded! Beginning training")

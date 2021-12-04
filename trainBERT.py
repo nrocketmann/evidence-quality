@@ -7,7 +7,7 @@ import torch
 device = 'cuda:0'
 lrate = 1e-3
 epochs = 10
-batch_size=16
+batch_size=32
 SAVEPATH = "modelBERT.pth"
 
 def get_datas(df):

@@ -25,7 +25,7 @@ df = pd.read_csv('data/test.csv')
 topics, evidences, procons, targets = get_datas(df)
 evidences, topics = make_model_datasets_test(topics,evidences,device,'token_dictionary.pkl')
 
-tokenizer = DumbTokenizer()
+tokenizer = DumbTokenizer(device)
 trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,shuffle=False)
 
 print("Model and data loaded! Beginning testing")

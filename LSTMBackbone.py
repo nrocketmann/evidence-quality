@@ -98,10 +98,11 @@ class LSTMBackbone(nn.Module):
 
 
 class DumbTokenizer(Tokenizer):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
+        self.device = device
     def tokenize(self,string):
-        return [string[...,:-1],string[...,-1]]
+        return [torch.tensor(string[...,:-1]).to(self.device),torch.tensor(string[...,-1]).to(self.device)]
 
 
 def build_dictionary(uniques):
