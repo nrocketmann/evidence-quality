@@ -102,7 +102,7 @@ class DumbTokenizer(Tokenizer):
         super().__init__()
         self.device = device
     def tokenize(self,string):
-        return [torch.tensor(string[...,:-1],dtype=torch.int64).to(self.device),torch.tensor(string[...,-1],dtype=torch.int64).to(self.device)]
+        return [torch.tensor(string[...,:-1],dtype=torch.int64).to(self.device),torch.tensor(string[...,-1],dtype=torch.int32).to('cpu')]
 
 
 def build_dictionary(uniques):
