@@ -30,6 +30,8 @@ class Trainer:
             t0 = time.time()
             running_loss = 0
             for _, data in tqdm(enumerate(self.dataloader)):
+                self.model.train()
+                self.model.backbone.train()
                 #print("dataloader elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
                 inp1, inp2, targets = data
@@ -56,13 +58,16 @@ class Trainer:
         correct_score = 0
         total_score = 0
         for _, data in tqdm(enumerate(self.dataloader)):
+            self.model.backbone.eval()
+            self.model.eval()
             inp1, inp2, targets = data
             outputs = self.model(inp1, inp2)
-            total_score+=outputs.shape[0]
             preds = torch.argmax(outputs,dim=-1)
             for p, t in zip(preds, targets):
                 if p==t:
                     correct_score+=1
+                total_score+=1
+        print(total_score)
         return correct_score/total_score
 
 

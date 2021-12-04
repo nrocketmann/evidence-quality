@@ -4,11 +4,11 @@ import pandas as pd
 import numpy as np
 import torch
 
-device = 'cuda:0'
-lrate = 1e-4
+device = 'cpu'
+lrate = 1e-3
 epochs = 10
 batch_size=2
-SAVEPATH = "model.pth"
+SAVEPATH = "modelBERT.pth"
 
 def get_datas(df):
     evidences =  np.stack([df['evidence_1'].values, df['evidence_2'].values],axis=-1)

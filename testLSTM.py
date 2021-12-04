@@ -1,12 +1,13 @@
-from LSTMBackbone import *
+from LSTMBackbone import LSTMBackbone,DumbTokenizer,make_model_datasets_test
 from Trainer import Trainer
 import pandas as pd
 import numpy as np
 import torch
+from torch import nn
 
 device = 'cpu'
 batch_size=16
-SAVEPATH = "modelLSTM.pth"
+SAVEPATH = "modelLSTMVanilla.pth"
 
 def get_datas(df):
     #df = df[-200:]
@@ -18,15 +19,14 @@ def get_datas(df):
     targets = df['label'].values-1
     return topics, evidences, procons, targets
 
-
+backbone = torch.load(SAVEPATH)
 
 df = pd.read_csv('data/test.csv')
 topics, evidences, procons, targets = get_datas(df)
 evidences, topics = make_model_datasets_test(topics,evidences,device,'token_dictionary.pkl')
-backbone = torch.load(SAVEPATH)
 
 tokenizer = DumbTokenizer()
-trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size)
+trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,shuffle=False)
 
 print("Model and data loaded! Beginning testing")
 acc = trainer.evaluate()

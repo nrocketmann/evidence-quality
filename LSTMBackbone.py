@@ -14,10 +14,11 @@ import pickle
 # model class for DistilBERT backbone, with linear layers on top to predict output
 # It's "simple" because we are just encoding the topic with the same model and concatenating
 class LSTMBackbone(nn.Module):
-    def __init__(self, num_outputs, embedding_matrix, input_length, learned_embeddings=True, device='cuda:0'):
+    def __init__(self, num_outputs, embedding_matrix, input_length, learned_embeddings=True, use_attention=True,device='cuda:0'):
         super(LSTMBackbone, self).__init__()
         self.num_outputs = num_outputs
         self.seq_len = input_length
+        self.use_attention = use_attention
 
         HSIZE = 128
         self.vocab_size, self.embedding_dim = embedding_matrix.shape[0], embedding_matrix.shape[1]
@@ -26,17 +27,36 @@ class LSTMBackbone(nn.Module):
         if not learned_embeddings:
             self.emb_layer.weight.requires_grad = False
 
+
         self.lstm_ev = nn.LSTM(self.embedding_dim, HSIZE, bidirectional=True, batch_first=True)
         self.lstm_top = nn.LSTM(self.embedding_dim, HSIZE, bidirectional=True, batch_first=True)
-        self.output_hidden = nn.Linear(2*2*HSIZE+1,128)
+
+        if self.use_attention:
+            HEADS = 4
+            self.attention_layer = nn.MultiheadAttention(HSIZE, HEADS,batch_first=True,dropout=.15)
+            self.attention_layer2 = nn.MultiheadAttention(HSIZE,HEADS,batch_first=True,dropout=.15)
+            self.keyW = nn.Linear(HSIZE*2, HSIZE)
+            self.valueW = nn.Linear(HSIZE*2, HSIZE)
+            self.queryW = nn.Linear(HSIZE * 2, HSIZE)
+            self.keyW2 = nn.Linear(HSIZE, HSIZE)
+            self.valueW2 = nn.Linear(HSIZE, HSIZE)
+            self.queryW2 = nn.Linear(HSIZE , HSIZE)
+            self.output_hidden = nn.Linear(HSIZE,128)
+
+        else:
+            self.output_hidden = nn.Linear(2*2*HSIZE+1,128)
         self.output_fc = nn.Linear(128,num_outputs)
+
+        self.dropout3 = nn.Dropout(.3)
+        self.dropout2 = nn.Dropout(.2)
 
 
     def forward(self, evidence, evidence_lengths, topic, topic_lengths, procon):
         batch_size = procon.shape[0]
         embeddings_ev = self.emb_layer(evidence)
         embeddings_top = self.emb_layer(topic)
-        embeddings_top = nn.Dropout(.3)(embeddings_top)
+        embeddings_top = self.dropout3(embeddings_top)
+        embeddings_ev = self.dropout2(embeddings_ev)
         embeddings_ev = nn.utils.rnn.pack_padded_sequence(embeddings_ev, evidence_lengths, batch_first=True,enforce_sorted=False)
         embeddings_top = nn.utils.rnn.pack_padded_sequence(embeddings_top, topic_lengths, batch_first=True,enforce_sorted=False)
         lstm_ev, _ = self.lstm_ev(embeddings_ev)
@@ -44,14 +64,36 @@ class LSTMBackbone(nn.Module):
 
         lstm_ev, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_ev, batch_first=True)
         lstm_top, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_top, batch_first=True)
-        ev_hidden = lstm_ev.contiguous()[torch.arange(batch_size),evidence_lengths-1,:]
-        top_hidden = lstm_top.contiguous()[torch.arange(batch_size), topic_lengths - 1, :]
-        hidden = torch.cat([ev_hidden, top_hidden, procon.view(-1,1)],dim=-1)
-        hidden = nn.Dropout(.2)(hidden)
+
+        #NON-ATTENTION VERSION
+        if not self.use_attention:
+            ev_hidden = lstm_ev.contiguous()[torch.arange(batch_size),evidence_lengths-1,:]
+            top_hidden = lstm_top.contiguous()[torch.arange(batch_size), topic_lengths - 1, :]
+            hidden = torch.cat([ev_hidden, top_hidden, procon.view(-1, 1)], dim=-1)
+
+        #ATTENTION VERSION
+        else:
+            ev_hidden = lstm_ev.contiguous()
+            #top_hidden = lstm_top.contiguous()[torch.arange(batch_size), topic_lengths - 1, :]
+            top_hidden = lstm_top.contiguous()
+            evidence_mask = self.generate_mask(evidence_lengths, batch_size, ev_hidden.shape[1])
+            queries, keys, values = self.queryW(top_hidden) * (2*procon - 1).view(batch_size,1,1), self.keyW(ev_hidden), self.valueW(ev_hidden)
+            hidden, attentionW = self.attention_layer(queries, keys, values,key_padding_mask=evidence_mask)
+            queries2, keys2, values2 = self.queryW2(hidden[torch.arange(batch_size), topic_lengths - 1, :]), self.keyW2(hidden), self.valueW2(hidden)
+            hidden, attentionW2 = self.attention_layer2(queries2.view(batch_size,1,-1), keys2,values2)
+            hidden = hidden.squeeze(1)
+
+        hidden = self.dropout2(hidden)
 
         hidden = nn.ReLU()(self.output_hidden(hidden))
         outputs = self.output_fc(hidden)
         return outputs
+
+    def generate_mask(self, lengths, batch_size,seq_len):
+        zeros = torch.zeros([batch_size,seq_len])
+        for length in lengths:
+            zeros[:,length:] = 1
+        return zeros
 
 
 
@@ -79,7 +121,7 @@ def unkfix_toks(toks, dictionary):
             newt.append(t)
     return newt
 
-def make_model_datasets(topics, evidences,device):
+def make_model_datasets(topics, evidences,device, num_outputs, learned_embeddings, use_attention):
     nlp = spacy.load("en_core_web_sm")
     tokenizer = SpacyTokenizer(nlp.vocab)
     nlp.tokenizer = tokenizer
@@ -158,7 +200,7 @@ def make_model_datasets(topics, evidences,device):
     lengths_ev = np.stack([lengths_ev[:N],lengths_ev[N:]],axis=1) #shape N x 2
     final_evidence = np.concatenate([final_evidence, np.expand_dims(lengths_ev,-1)],-1)
     final_topics = np.concatenate([final_topics,np.expand_dims(np.asarray(lengths_top),1)],axis=-1)
-    model = LSTMBackbone(1,embmatrix,SEQ_LEN,False,device=device)
+    model = LSTMBackbone(num_outputs,embmatrix,SEQ_LEN,learned_embeddings=learned_embeddings,device=device,use_attention=use_attention)
     return model, final_evidence, final_topics, SEQ_LEN,embmatrix
 
 def make_model_datasets_test(topics, evidences,device, dictfile):
@@ -213,7 +255,3 @@ def make_model_datasets_test(topics, evidences,device, dictfile):
     final_evidence = np.concatenate([final_evidence, np.expand_dims(lengths_ev,-1)],-1)
     final_topics = np.concatenate([final_topics,np.expand_dims(np.asarray(lengths_top),1)],axis=-1)
     return final_evidence, final_topics
-
-
-
-

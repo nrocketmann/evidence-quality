@@ -5,12 +5,18 @@ import numpy as np
 import torch
 
 device = 'cpu'
-lrate = 1e-4
-epochs = 50
+lrate = 1e-3
+epochs = 20
 batch_size=32
-SAVEPATH = "modelLSTM.pth"
+SAVEPATH = "modelLSTMvanilla.pth"
 cache_dataset="lstmcache.pkl"
 load_cache = True
+
+use_attention = True
+learned_embeddings = False
+num_outputs = 1
+
+#1 output, no attention, no learned embeddings: 67-69 test accuracy
 
 def get_datas(df):
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)
@@ -29,11 +35,11 @@ if load_cache:
     targets = loaded["targets"]
     seq_len = loaded['seq_len']
     embmatrix = loaded['embmatrix']
-    backbone = LSTMBackbone(1,embmatrix,seq_len,False,device=device)
+    backbone = LSTMBackbone(num_outputs,embmatrix,seq_len,learned_embeddings,use_attention,device=device)
 else:
     df = pd.read_csv('data/train.csv')
     topics, evidences, procons, targets = get_datas(df)
-    backbone, evidences, topics, seq_len, embmatrix = make_model_datasets(topics,evidences,device)
+    backbone, evidences, topics, seq_len, embmatrix = make_model_datasets(topics,evidences,device,num_outputs,learned_embeddings,use_attention)
     if cache_dataset!="":
         pickle.dump({"evidence":evidences,"topic":topics,"procons":procons,"targets":targets,'seq_len':seq_len, 'embmatrix':embmatrix},open(cache_dataset,'wb'))
 
@@ -45,4 +51,3 @@ trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=dev
 
 print("Model and data loaded! Beginning training")
 trainer.train(epochs,SAVEPATH)
-torch.save(backbone, open(SAVEPATH,'wb'))

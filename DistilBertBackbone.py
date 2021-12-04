@@ -1,4 +1,4 @@
-from transformers import DistilBertModel, DistilBertConfig, DistilBertTokenizerFast
+from transformers import ElectraModel, ElectraTokenizerFast
 from torch import nn
 from Tokenizer import Tokenizer
 import torch
@@ -8,8 +8,9 @@ import torch
 class DistilBERTSimple(nn.Module):
     def __init__(self, hidden_layers = [512], hidden_activation=nn.ReLU, dropout_chance = .1,num_outputs = 1, device='cuda:0'):
         super(DistilBERTSimple, self).__init__()
-        self.l1 = DistilBertModel.from_pretrained("distilbert-base-uncased") #I'm not using any config here, just default
+        self.l1 = ElectraModel.from_pretrained('google/electra-small-discriminator') #I'm not using any config here, just default
         #we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
+        self.l1.requires_grad_(False)
 
         self.hidden_layers = []
         if dropout_chance>0:
@@ -45,8 +46,8 @@ class DistilBERTTokenizer(Tokenizer):
     def __init__(self, max_len = 512, device='cuda:0'):
         super().__init__()
         self.device = device
-        self.max_len=512
-        self.tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-uncased',model_max_length=max_len)
+        self.max_len=64
+        self.tokenizer = ElectraTokenizerFast.from_pretrained('google/electra-small-discriminator')
 
     def tokenize(self, string):
         text = " ".join(string.split())
