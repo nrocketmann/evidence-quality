@@ -5,9 +5,9 @@ import numpy as np
 import torch
 from torch import nn
 
-device = 'cpu'
+device = 'cuda:0'
 batch_size=16
-SAVEPATH = "modelLSTMVanilla.pth"
+SAVEPATH = "modelLSTMAttention.pth"
 
 def get_datas(df):
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)

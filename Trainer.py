@@ -23,7 +23,7 @@ class Trainer:
                                          device=device)
             self.valdataloader = DataLoader(self.valdataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
         else:
-            self.dataset = MultiLabelDataset(tokenizer, topics[:-valsize], evidences[:-valsize], procons[:-valsize], labels[:-valsize],
+            self.dataset = MultiLabelDataset(tokenizer, topics, evidences, procons, labels,
                                          device=device)
             self.dataloader = DataLoader(self.dataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
         self.model = Siamese(backbone).to(self.device)
