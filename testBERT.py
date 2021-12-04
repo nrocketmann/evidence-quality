@@ -23,7 +23,7 @@ train_data = get_datas(df)
 
 tokenizer = DistilBERTTokenizer(device=device)
 backbone = torch.load(SAVEPATH).to(device)
-trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size)
+trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size,valsize=0)
 
 print("Model and data loaded! Beginning training")
 acc = trainer.evaluate()

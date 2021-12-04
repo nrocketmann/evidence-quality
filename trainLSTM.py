@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-device = 'cuda:0'
+device = 'cpu'
 lrate = 1e-3
 epochs = 50
 batch_size=32
@@ -19,6 +19,7 @@ num_outputs = 1
 #1 output, no attention, no learned embeddings: 67-69 test accuracy
 
 def get_datas(df):
+    df = df.sort_values("topic")
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)
     procon1 = df['evidence_1_stance'].apply(lambda x: 0 if x=="CON" else 1)
     procon2 = df['evidence_2_stance'].apply(lambda x: 0 if x=="CON" else 1)

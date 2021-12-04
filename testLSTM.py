@@ -10,7 +10,6 @@ batch_size=16
 SAVEPATH = "modelLSTMVanilla.pth"
 
 def get_datas(df):
-    #df = df[-200:]
     evidences =  np.concatenate([df['evidence_1'].values, df['evidence_2'].values],axis=0)
     procon1 = df['evidence_1_stance'].apply(lambda x: 0 if x=="CON" else 1)
     procon2 = df['evidence_2_stance'].apply(lambda x: 0 if x=="CON" else 1)
@@ -19,14 +18,14 @@ def get_datas(df):
     targets = df['label'].values-1
     return topics, evidences, procons, targets
 
-backbone = torch.load(SAVEPATH)
+backbone = torch.load(SAVEPATH).to(device)
 
 df = pd.read_csv('data/test.csv')
 topics, evidences, procons, targets = get_datas(df)
 evidences, topics = make_model_datasets_test(topics,evidences,device,'token_dictionary.pkl')
 
 tokenizer = DumbTokenizer(device)
-trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,shuffle=False)
+trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,shuffle=False,valsize=0)
 
 print("Model and data loaded! Beginning testing")
 acc = trainer.evaluate()

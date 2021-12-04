@@ -10,26 +10,33 @@ import time
 #This class is to actually execute all of our training functionality
 class Trainer:
     def __init__(self, backbone, tokenizer, topics, evidences, procons, labels,lrate=1e-4, device='cuda:0',
-                 batch_size=16, shuffle=True, num_workers=0, precomputed_dataset=None):
+                 batch_size=16, shuffle=True, num_workers=0, valsize = 253+170):
         self.backbone = backbone
         self.device = device
 
-        if precomputed_dataset is not None:
-            self.dataset = precomputed_dataset
-        else:
-            self.dataset = MultiLabelDataset(tokenizer, topics, evidences, procons, labels,
+        if valsize!=0:
+            self.traindataset = MultiLabelDataset(tokenizer, topics[:-valsize], evidences[:-valsize], procons[:-valsize], labels[:-valsize],
                                          device=device)
-        self.dataloader = DataLoader(self.dataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
+            self.traindataloader = DataLoader(self.traindataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
+
+            self.valdataset = MultiLabelDataset(tokenizer, topics[-valsize:], evidences[-valsize:], procons[-valsize:], labels[-valsize:],
+                                         device=device)
+            self.valdataloader = DataLoader(self.valdataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
+        else:
+            self.dataset = MultiLabelDataset(tokenizer, topics[:-valsize], evidences[:-valsize], procons[:-valsize], labels[:-valsize],
+                                         device=device)
+            self.dataloader = DataLoader(self.dataset,batch_size=batch_size,shuffle=shuffle,num_workers=num_workers)
         self.model = Siamese(backbone).to(self.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),lr=lrate)
         self.loss_fn = nn.CrossEntropyLoss()
 
     def train(self, epochs, savepath):
+        valaccs = []
         for epoch in range(epochs):
             self.model.train()
             t0 = time.time()
             running_loss = 0
-            for _, data in tqdm(enumerate(self.dataloader)):
+            for _, data in tqdm(enumerate(self.traindataloader)):
                 self.model.train()
                 self.model.backbone.train()
                 #print("dataloader elapsed time: {0}".format(time.time()-t0))
@@ -53,6 +60,27 @@ class Trainer:
                 #print("backward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()
             torch.save(self.backbone,open(savepath,'wb'))
+            valaccs.append(self.valset())
+            print("Validation Accuracy: {0}".format(valaccs[-1]))
+            if len(valaccs)>10 and valaccs[-10]>=valaccs[-1]:
+                print("Early stopping!")
+                break
+
+    def valset(self):
+        self.model.eval()
+        correct_score = 0
+        total_score = 0
+        for _, data in tqdm(enumerate(self.valdataloader)):
+            self.model.backbone.eval()
+            self.model.eval()
+            inp1, inp2, targets = data
+            outputs = self.model(inp1, inp2)
+            preds = torch.argmax(outputs,dim=-1)
+            for p, t in zip(preds, targets):
+                if p==t:
+                    correct_score+=1
+                total_score+=1
+        return correct_score/total_score
     def evaluate(self):
         self.model.eval()
         correct_score = 0

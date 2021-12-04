@@ -11,6 +11,7 @@ batch_size=32
 SAVEPATH = "modelBERT.pth"
 
 def get_datas(df):
+    df = df.sort_values("topic")
     evidences =  np.stack([df['evidence_1'].values, df['evidence_2'].values],axis=-1)
     procon1 = df['evidence_1_stance'].apply(lambda x: 0 if x=="CON" else 1)
     procon2 = df['evidence_2_stance'].apply(lambda x: 0 if x=="CON" else 1)
