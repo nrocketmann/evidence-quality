@@ -34,10 +34,9 @@ class DistilBERTSimple(nn.Module):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
         h_topic = self.l2(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
         weird_procon = (2*procon - 1).view(-1,1)
-        h_topic = self.dropout3(h_topic[0][:, 0]) * weird_procon
 
         #h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
-        h = torch.cat([h_ev[0][:, 0], h_topic[0][:, 0]],dim=-1)
+        h = torch.cat([h_ev[0][:, 0], h_topic[0][:, 0] * weird_procon],dim=-1)
         h = self.dropout3(h)
         for layer in self.hidden_layers:
             h = layer(h)
@@ -57,7 +56,9 @@ class DistilBERTDotProduct(nn.Module):
         self.l1 = ElectraModel.from_pretrained(
             'google/electra-small-discriminator')  # I'm not using any config here, just default
         # we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
-        self.l1.requires_grad_(False)
+        self.l1.requires_grad_(True)
+        self.l2 = ElectraModel.from_pretrained('google/electra-small-discriminator')
+        self.l2.requires_grad_(True)
 
         self.hidden_layers1 = []
         self.hidden_layers2 = []
@@ -81,7 +82,7 @@ class DistilBERTDotProduct(nn.Module):
 
     def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
-        h_topic = self.l1(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
+        h_topic = self.l2(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
 
         h_ev = self.dropout3(h_ev[0][:, 0])
         weird_procon = (2*procon - 1).view(-1,1)
