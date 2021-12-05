@@ -56,6 +56,7 @@ class Trainer:
 
                 self.optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.backbone.parameters(), 1.0)
                 self.optimizer.step()
                 #print("backward elapsed time: {0}".format(time.time()-t0))
                 t0 = time.time()

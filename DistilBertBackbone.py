@@ -48,6 +48,50 @@ class DistilBERTSimple(nn.Module):
             for param in module.parameters():
                 yield param
 
+class DistilBERTAttention(nn.Module):
+    def __init__(self, hidden_layers = [512], hidden_activation=nn.ReLU, dropout_chance = .1,num_outputs = 1, device='cuda:0'):
+        super(DistilBERTAttention, self).__init__()
+        self.l1 = ElectraModel.from_pretrained('google/electra-small-discriminator') #I'm not using any config here, just default
+        self.l2 = ElectraModel.from_pretrained('google/electra-small-discriminator')
+        #we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
+        self.l1.requires_grad_(True)
+        self.l2.requires_grad_(True)
+
+        self.hidden_layers = []
+        if dropout_chance>0:
+            self.hidden_layers.append(nn.Dropout(dropout_chance))
+
+        #add hidden layers
+        last_size = 256*2# + 1 #BERT output size is 768, electra is 256
+        for size in hidden_layers:
+            self.hidden_layers.append(nn.Linear(last_size, size).to(device))
+            self.hidden_layers.append(hidden_activation())
+            self.hidden_layers.append(nn.Dropout(dropout_chance))
+            last_size = size
+
+        #add final linear layer
+        self.final_layer = nn.Linear(last_size, num_outputs)
+        self.dropout3 = nn.Dropout(.3)
+
+    def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
+        h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
+        h_topic = self.l2(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
+        weird_procon = (2*procon - 1).view(-1,1)
+
+        #h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
+        h = torch.cat([h_ev[0][:, 0], h_topic[0][:, 0] * weird_procon],dim=-1)
+        h = self.dropout3(h)
+        for layer in self.hidden_layers:
+            h = layer(h)
+        output = self.final_layer(h)
+        return output
+
+    def parameters(self):
+        for module in [self.l1, self.final_layer] + self.hidden_layers:
+            for param in module.parameters():
+                yield param
+
+
 
 class DistilBERTDotProduct(nn.Module):
     def __init__(self, hidden_layers=[512], hidden_activation=nn.ReLU, dropout_chance=.1, num_outputs=1,
