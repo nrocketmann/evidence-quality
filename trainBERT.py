@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-device = 'cpu'
+device = 'cuda:0'
 lrate = 1e-3
 epochs = 10
 batch_size=32
@@ -27,7 +27,7 @@ iter_per_epoch = len(train_data[0])//batch_size
 print("Iter per epoch: " + str(iter_per_epoch))
 
 tokenizer = DistilBERTTokenizer(device=device)
-backbone = DistilBERTDotProduct(hidden_layers=[512,128], device=device).to(device)
+backbone = DistilBERTSimple(hidden_layers=[512,128], device=device).to(device)
 trainer = Trainer(backbone,tokenizer,*train_data,device=device,batch_size=batch_size)
 
 print("Model and data loaded! Beginning training")

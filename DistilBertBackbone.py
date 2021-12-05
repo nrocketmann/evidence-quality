@@ -10,7 +10,7 @@ class DistilBERTSimple(nn.Module):
         super(DistilBERTSimple, self).__init__()
         self.l1 = ElectraModel.from_pretrained('google/electra-small-discriminator') #I'm not using any config here, just default
         #we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
-        self.l1.requires_grad_(False)
+        self.l1.requires_grad_(True)
 
         self.hidden_layers = []
         if dropout_chance>0:
@@ -120,4 +120,3 @@ class DistilBERTTokenizer(Tokenizer):
         return [ #return in a list format for convenience
             torch.tensor(ids, dtype=torch.long).to(self.device),
             torch.tensor(mask, dtype=torch.long).to(self.device)]
-

@@ -64,7 +64,7 @@ class Trainer:
             print("Validation Accuracy: {0}".format(valaccs[-1]))
             if len(valaccs)>10 and valaccs[-10]>=valaccs[-1]:
                 print("Early stopping!")
-                break
+                #break
 
     def valset(self):
         self.model.eval()
