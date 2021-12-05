@@ -6,7 +6,7 @@ import torch
 
 device = 'cuda:0'
 lrate = 1e-3
-epochs = 10
+epochs = 20
 batch_size=32
 SAVEPATH = "modelBERT.pth"
 

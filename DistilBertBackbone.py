@@ -9,8 +9,10 @@ class DistilBERTSimple(nn.Module):
     def __init__(self, hidden_layers = [512], hidden_activation=nn.ReLU, dropout_chance = .1,num_outputs = 1, device='cuda:0'):
         super(DistilBERTSimple, self).__init__()
         self.l1 = ElectraModel.from_pretrained('google/electra-small-discriminator') #I'm not using any config here, just default
+        self.l2 = ElectraModel.from_pretrained('google/electra-small-discriminator')
         #we might want to change sequence length later?? I think 512 is pretty long, but it should pad and stuff making it ok
         self.l1.requires_grad_(True)
+        self.l2.requires_grad_(True)
 
         self.hidden_layers = []
         if dropout_chance>0:
@@ -30,7 +32,7 @@ class DistilBERTSimple(nn.Module):
 
     def forward(self, input_ids_evidence, attention_mask_evidence, input_ids_topic, attention_mask_topic, procon):
         h_ev = self.l1(input_ids=input_ids_evidence, attention_mask=attention_mask_evidence)
-        h_topic = self.l1(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
+        h_topic = self.l2(input_ids=input_ids_topic, attention_mask=attention_mask_topic)
         
         h = torch.cat([h_ev[0][:,0], h_topic[0][:,0], procon.view(-1,1)],dim=-1)
         h = self.dropout3(h)

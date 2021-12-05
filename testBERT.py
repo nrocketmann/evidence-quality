@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import torch
 
-device = 'cpu'
-batch_size=2
-SAVEPATH = "model.pth"
+device = 'cuda:0'
+batch_size=32
+SAVEPATH = "modelBERT.pth"
 
 def get_datas(df):
     evidences =  np.stack([df['evidence_1'].values, df['evidence_2'].values],axis=-1)
