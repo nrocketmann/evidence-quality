@@ -44,7 +44,7 @@ class DistilBERTSimple(nn.Module):
         return output
 
     def parameters(self):
-        for module in [self.l1, self.final_layer] + self.hidden_layers:
+        for module in [self.l1, self.l2, self.final_layer] + self.hidden_layers:
             for param in module.parameters():
                 yield param
 
@@ -89,7 +89,8 @@ class DistilBERTAttention(nn.Module):
 
 
     def parameters(self):
-        for module in [self.l1, self.final_layer] + self.hidden_layers:
+        for module in [self.l1, self.l2, self.final_layer, self.attention_layer, self.attention_layer2, self.keyW, self.keyW2,
+                       self.valueW, self.valueW2, self.queryW, self.queryW2, self.final_layer]:
             for param in module.parameters():
                 yield param
 
@@ -143,7 +144,7 @@ class DistilBERTDotProduct(nn.Module):
         return output
 
     def parameters(self):
-        for module in [self.l1] + self.hidden_layers1 + self.hidden_layers2:
+        for module in [self.l1, self.l2] + self.hidden_layers1 + self.hidden_layers2:
             for param in module.parameters():
                 yield param
 
