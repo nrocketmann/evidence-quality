@@ -2,6 +2,13 @@
 
 This GitHub repository contains all the code for project DeBERTer (paper link coming soon). This work was done as a final project for the class EECS 595: Natural Language Processing at the University of Michigan. The authors are Junliang Huang, Nameer Hirschkind, and Zewen Wu. Below are instructions on how to reproduce our results.
 
+## Environment Setup
+Please run the following command line arguments to set up the proper python virtual environment for this project.
+```
+python3 -m venv [your_env]
+pip install -r requirement.txt
+source [yout_env]/bin/activate
+```
 ## LSTM Models
 
 ### Training
