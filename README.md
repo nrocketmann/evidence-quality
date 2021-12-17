@@ -29,3 +29,4 @@ To test an ELECTRA model, run `testBERT.py` exactly as you would for an LSTM mod
 All the code to generate LIME interpretations is contained in the `lime-BERT.ipynb` and `lime-LSTM.ipynb` Jupyter notebooks.
 
 ## Attention Interpretation
+Currently the code to generate attention weight heatmap is in another branch `interpret-attention` since the backbone code need to be modified. Please check out `attint-LSTM.ipynb`.
