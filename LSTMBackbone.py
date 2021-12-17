@@ -52,7 +52,8 @@ class LSTMBackbone(nn.Module):
         self.device = device
 
 
-    def forward(self, evidence, evidence_lengths, topic, topic_lengths, procon):
+    def forward(self, evidence, evidence_lengths, topic, topic_lengths, procon, 
+            return_weight=False):
         batch_size = procon.shape[0]
         embeddings_ev = self.emb_layer(evidence)
         embeddings_top = self.emb_layer(topic)
@@ -88,6 +89,8 @@ class LSTMBackbone(nn.Module):
 
         hidden = nn.ReLU()(self.output_hidden(hidden))
         outputs = self.output_fc(hidden)
+        if return_weight:
+            return outputs, attentionW
         return outputs
 
     def generate_mask(self, lengths, batch_size,seq_len):

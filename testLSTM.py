@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch import nn
 
-device = 'cuda:0'
+device = 'cpu'
 batch_size=16
 SAVEPATH = "modelLSTMAttention.pth"
 
@@ -28,5 +28,7 @@ tokenizer = DumbTokenizer(device)
 trainer = Trainer(backbone,tokenizer,topics,evidences,procons,targets,device=device,batch_size=batch_size,shuffle=False,valsize=0)
 
 print("Model and data loaded! Beginning testing")
-acc = trainer.evaluate()
+acc, weight_list = trainer.evaluate()
 print(acc)
+# print(weight_list[0])
+# print(len(weight_list))
